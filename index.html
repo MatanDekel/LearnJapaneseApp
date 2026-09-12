@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>言葉 Kotoba — אוצר מילים יפני</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Noto+Sans+Hebrew:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1B1F28;
+    --surface: #242A38;
+    --surface-raised: #2C3444;
+    --paper: #EDEAE2;
+    --paper-dim: #B9B6AC;
+    --seal: #C1443B;
+    --teal: #6E9887;
+    --amber: #C99A3E;
+    --line: rgba(237,234,226,0.12);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--ink);
+    color: var(--paper);
+    font-family: 'Noto Sans Hebrew', sans-serif;
+    min-height: 100vh;
+    padding: 24px 16px 60px;
+  }
+  .wrap { max-width: 480px; margin: 0 auto; }
+  .ltr { direction: ltr; unicode-bidi: isolate; display: inline-block; }
+
+  header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+  .brand { font-family: 'Shippori Mincho', serif; font-weight: 700; font-size: 24px; }
+  .brand span { color: var(--paper-dim); font-family: 'Noto Sans Hebrew', sans-serif; font-size: 13px; display: block; font-weight: 400; }
+  .seal {
+    width: 44px; height: 44px; border: 2px solid var(--seal); border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Shippori Mincho', serif; color: var(--seal); font-size: 18px; font-weight: 700;
+    flex-shrink: 0; transform: rotate(2deg);
+  }
+
+  .topnav { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; }
+  .back-btn {
+    background: var(--surface); border: 1px solid var(--line); color: var(--paper);
+    border-radius: 8px; padding: 8px 12px; font-size: 14px; cursor: pointer;
+  }
+  .topnav h1 { font-size: 17px; font-weight: 700; margin: 0; font-family: 'Shippori Mincho', serif; }
+  .topnav .sub { font-size: 12px; color: var(--paper-dim); margin: 2px 0 0; }
+
+  /* category grid */
+  .cat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 6px; }
+  .cat-card {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 14px;
+    padding: 16px 12px; text-align: center; cursor: pointer;
+  }
+  .cat-card .icon { font-size: 26px; margin-bottom: 8px; }
+  .cat-card .name { font-size: 13.5px; font-weight: 700; line-height: 1.3; }
+  .cat-card .prog { font-size: 11px; color: var(--paper-dim); margin-top: 6px; }
+
+  .stack-pill {
+    display: flex; align-items: center; justify-content: space-between;
+    background: var(--surface); border: 1px solid rgba(193,68,59,0.4); border-radius: 12px;
+    padding: 14px 16px; margin-bottom: 16px; cursor: pointer;
+  }
+  .stack-pill .txt { font-size: 14px; font-weight: 700; }
+  .stack-pill .count { font-family: 'Shippori Mincho', serif; color: var(--seal); font-size: 20px; font-weight: 700; }
+
+  /* subcategory list */
+  .sub-list { display: flex; flex-direction: column; gap: 8px; }
+  .sub-row {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
+    padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; cursor: pointer;
+  }
+  .sub-row .name { font-size: 14.5px; font-weight: 700; }
+  .sub-row .prog { font-size: 12px; color: var(--paper-dim); margin-top: 3px; }
+  .sub-row .chev { color: var(--paper-dim); font-size: 16px; }
+
+  /* word cards */
+  .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 4px; }
+  .card {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
+    padding: 14px 10px; min-height: 84px; display: flex; flex-direction: column;
+    justify-content: center; align-items: center; text-align: center; cursor: pointer;
+    -webkit-tap-highlight-color: transparent; position: relative; gap: 6px;
+  }
+  .card.known { border-color: rgba(110,152,135,0.5); }
+  .card.unknown { border-color: rgba(193,68,59,0.55); }
+  .card .front-en { font-size: 13px; }
+  .card .back-ro { font-family: 'Shippori Mincho', serif; font-size: 15.5px; font-weight: 700; color: var(--teal); display: none; }
+  .card.flipped .front-en { display: none; }
+  .card.flipped .back-ro { display: block; }
+  .mark-row { display: none; gap: 6px; margin-top: 2px; }
+  .card.flipped .mark-row { display: flex; }
+  .mark-btn { font-size: 15px; border: none; border-radius: 6px; width: 28px; height: 24px; cursor: pointer; background: var(--surface-raised); color: var(--paper); }
+  .mark-btn.active-know { background: var(--teal); color: #10231C; }
+  .mark-btn.active-unknown { background: var(--seal); color: #2B0E0C; }
+  .status-dot { position: absolute; top: 6px; left: 8px; width: 8px; height: 8px; border-radius: 50%; }
+  .status-dot.known { background: var(--teal); }
+  .status-dot.unknown { background: var(--seal); }
+
+  .empty-note {
+    color: var(--paper-dim); font-size: 13px; background: var(--surface); border: 1px dashed var(--line);
+    border-radius: 10px; padding: 16px; text-align: center; line-height: 1.6;
+  }
+
+  .game-btn {
+    width: 100%; margin-top: 14px; padding: 12px; border-radius: 10px; border: 1px solid var(--teal);
+    background: transparent; color: var(--teal); font-family: 'Noto Sans Hebrew', sans-serif;
+    font-weight: 700; font-size: 14px; cursor: pointer;
+  }
+  .game-btn:disabled { border-color: var(--line); color: var(--paper-dim); cursor: default; }
+  .game-btn:active:not(:disabled) { background: rgba(110,152,135,0.12); }
+
+  .modal-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(10,12,16,0.9); z-index: 50;
+    align-items: center; justify-content: center; padding: 20px;
+  }
+  .modal-overlay.open { display: flex; }
+  .game-card { width: 100%; max-width: 380px; background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 28px 22px; text-align: center; position: relative; }
+  .game-close { position: absolute; top: 14px; left: 14px; background: none; border: none; color: var(--paper-dim); font-size: 18px; cursor: pointer; }
+  .game-progress { font-size: 12px; color: var(--paper-dim); margin-bottom: 18px; }
+  .game-word { font-size: 22px; margin: 20px 0 8px; }
+  .game-reading { font-family: 'Shippori Mincho', serif; font-size: 24px; font-weight: 700; color: var(--teal); min-height: 32px; margin-bottom: 24px; }
+  .game-reveal-btn { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface-raised); color: var(--paper); font-family: 'Noto Sans Hebrew', sans-serif; font-size: 14px; cursor: pointer; margin-bottom: 8px; }
+  .game-answer-row { display: flex; gap: 10px; margin-top: 6px; }
+  .game-answer-row button { flex: 1; padding: 14px; border-radius: 10px; border: none; font-family: 'Noto Sans Hebrew', sans-serif; font-weight: 700; font-size: 15px; cursor: pointer; }
+  .know-big { background: var(--teal); color: #10231C; }
+  .unknown-big { background: var(--seal); color: #2B0E0C; }
+  .game-summary { font-size: 14px; line-height: 1.8; }
+  .game-summary .big-num { font-family: 'Shippori Mincho', serif; font-size: 34px; }
+  .game-done-btn { margin-top: 18px; width: 100%; padding: 12px; border-radius: 10px; border: none; background: var(--seal); color: #F6E9E7; font-weight: 700; font-family: 'Noto Sans Hebrew', sans-serif; cursor: pointer; }
+
+  .footer-note { margin-top: 26px; text-align: center; font-size: 11px; color: var(--paper-dim); line-height: 1.7; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand">言葉<span>Kotoba — אוצר מילים</span></div>
+    <div class="seal" id="sealTotal">0</div>
+  </header>
+
+  <div id="app"></div>
+
+  <div class="modal-overlay" id="gameOverlay">
+    <div class="game-card" id="gameCardArea"></div>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDU__sgy3HqBuP_dmzdU5qG4qdBJCApaz8",
+  authDomain: "learnjapaneseapp-36d7c.firebaseapp.com",
+  projectId: "learnjapaneseapp-36d7c",
+  storageBucket: "learnjapaneseapp-36d7c.firebasestorage.app",
+  messagingSenderId: "310473723080",
+  appId: "1:310473723080:web:236a3e4c5d8e6ce89a29fd"
+};
+const fbApp = initializeApp(firebaseConfig);
+const db = getFirestore(fbApp);
+
+/* Each browser gets its own persistent id, so each person's progress is separate */
+function getDeviceId() {
+  let id = localStorage.getItem('kotoba-device-id');
+  if (!id) {
+    id = 'dev-' + Math.random().toString(36).slice(2) + Date.now().toString(36);
+    localStorage.setItem('kotoba-device-id', id);
+  }
+  return id;
+}
+const DEVICE_ID = getDeviceId();
+
+/* ================= CATEGORY DATA ================= */
+const CATEGORIES = [
+  { id:'greetings', name:'ביטויי יסוד ונימוס', icon:'🙏', subs:[
+    { id:'basic', name:'ברכות וניסוח בסיסי', words:[
+      ["hello","konnichiwa"],["good morning","ohayou"],["good evening","konbanwa"],["good night","oyasumi"],
+      ["thank you","arigatou"],["you're welcome","dou itashimashite"],["excuse me / sorry","sumimasen"],
+      ["yes","hai"],["no","iie"],["please","onegaishimasu"],["goodbye","sayounara"],
+      ["nice to meet you","hajimemashite"],["I understand","wakarimashita"],["I don't understand","wakarimasen"],
+      ["what is this?","kore wa nan desu ka"]
+    ]}
+  ]},
+  { id:'numbers', name:'מספרים', icon:'🔢', subs:[
+    { id:'basic', name:'מספרים בסיסיים', words:[
+      ["one","ichi"],["two","ni"],["three","san"],["four","yon"],["five","go"],["six","roku"],["seven","nana"],
+      ["eight","hachi"],["nine","kyuu"],["ten","juu"],["eleven","juuichi"],["twelve","juuni"],["twenty","nijuu"],
+      ["thirty","sanjuu"],["hundred","hyaku"],["thousand","sen"],["zero","zero"],["first","saisho"],["last","saigo"]
+    ]},
+    { id:'objects', name:'ספירת חפצים', words:[
+      ["one (object)","hitotsu"],["two (objects)","futatsu"],["three (objects)","mittsu"],["four (objects)","yottsu"],
+      ["five (objects)","itsutsu"],["six (objects)","muttsu"],["seven (objects)","nanatsu"],["eight (objects)","yattsu"],
+      ["nine (objects)","kokonotsu"],["ten (objects)","tou"],["how many (objects)?","ikutsu"],
+      ["one (round item)","ikko"],["two (round items)","niko"]
+    ]},
+    { id:'people', name:'ספירת בני אדם', words:[
+      ["one person","hitori"],["two people","futari"],["three people","sannin"],["four people","yonin"],
+      ["five people","gonin"],["six people","rokunin"],["seven people","shichinin"],["eight people","hachinin"],
+      ["nine people","kyuunin"],["ten people","juunin"],["how many people?","nannin"]
+    ]},
+    { id:'age', name:'גיל', words:[
+      ["one year old","issai"],["two years old","nisai"],["three years old","sansai"],["ten years old","jussai"],
+      ["twenty years old","hatachi"],["how old?","nansai desu ka"]
+    ]},
+    { id:'time', name:'שעה וזמן', words:[
+      ["one o'clock","ichiji"],["two o'clock","niji"],["o'clock","ji"],["minute","fun"],
+      ["what time is it?","nanji desu ka"],["half past","han"],["morning (AM)","gozen"],["afternoon (PM)","gogo"]
+    ]}
+  ]},
+  { id:'food', name:'אוכל', icon:'🍜', subs:[
+    { id:'fruits', name:'פירות', words:[
+      ["fruit","kudamono"],["apple","ringo"],["banana","banana"],["mandarin / orange","mikan"],["grape","budou"],
+      ["strawberry","ichigo"],["peach","momo"],["watermelon","suika"],["melon","meron"],["lemon","remon"]
+    ]},
+    { id:'vegetables', name:'ירקות', words:[
+      ["vegetable","yasai"],["carrot","ninjin"],["potato","jagaimo"],["onion","tamanegi"],["tomato","tomato"],
+      ["cucumber","kyuuri"],["cabbage","kyabetsu"],["eggplant","nasu"],["corn","toumorokoshi"],["mushroom","kinoko"]
+    ]},
+    { id:'dishes', name:'מאכלים וארוחות', words:[
+      ["rice / meal","gohan"],["miso soup","misoshiru"],["sushi","sushi"],["ramen","raamen"],["curry","karee"],
+      ["tempura","tenpura"],["noodles","udon"],["dumpling","gyouza"],["bread","pan"],["meat","niku"],
+      ["fish","sakana"],["egg","tamago"],["breakfast","asagohan"],["lunch","hirugohan"],["dinner","bangohan"]
+    ]},
+    { id:'drinks', name:'משקאות', words:[
+      ["drink","nomimono"],["water","mizu"],["tea","ocha"],["coffee","koohii"],["milk","gyuunyuu"],
+      ["juice","juusu"],["beer","biiru"],["wine","wain"]
+    ]},
+    { id:'tastes', name:'טעמים', words:[
+      ["delicious","oishii"],["tasty (casual)","umai"],["sweet","amai"],["salty","shoppai"],["spicy","karai"],
+      ["sour","suppai"],["bitter","nigai"],["not tasty","mazui"]
+    ]},
+    { id:'tableware', name:'כלי שולחן', words:[
+      ["chopsticks","hashi"],["bowl","chawan"],["plate","osara"],["cup / glass","koppu"],["spoon","supuun"],["fork","fooku"]
+    ]}
+  ]},
+  { id:'family_talk', name:'ארוחה משפחתית ורכילות', icon:'🍽️', subs:[
+    { id:'table_phrases', name:'ביטויי שולחן', words:[
+      ["let's eat (before a meal)","itadakimasu"],["thanks for the meal","gochisousama"],["seconds / one more helping","okawari"],
+      ["I'm full","onaka ippai"],["that looks delicious","oishisou"],["cheers","kanpai"],["pass me...","totte kudasai"],
+      ["I'm hungry","onaka ga suita"],["I'm thirsty","nodo ga kawaita"],["enjoy your meal","meshiagare"],
+      ["I'm home","tadaima"],["welcome home","okaeri"]
+    ]},
+    { id:'small_talk', name:'שאלות קטנות לשיחת שולחן', words:[
+      ["how was your day?","kyou wa dou datta"],["what's new?","saikin dou"],["how's work?","shigoto wa dou"],
+      ["how's school?","gakkou wa dou"],["what did you do today?","kyou nani shita"],["are you tired?","tsukareta"],
+      ["what's for dinner?","bangohan wa nani"],["how are you?","genki"]
+    ]},
+    { id:'reactions', name:'תגובות בשיחה', words:[
+      ["really?!","honto ni"],["no way!","masaka"],["I can't believe it","shinjirarenai"],["that's amazing","sugoi"],
+      ["seriously?","majide"],["I agree","sansei"],["I disagree","hantai"],["I see / makes sense","naruhodo"],
+      ["that's interesting","omoshiroi"],["that's too bad","zannen"]
+    ]},
+    { id:'gossip', name:'רכילות וסודות', words:[
+      ["rumor","uwasa"],["secret","himitsu"],["guess what","nee kiite"],["I heard that...","...tte kiita"],
+      ["actually...","jitsu wa"],["by the way","tokorode"],["just between us","naisho da yo"],["apparently...","...rashii"],
+      ["what do you think?","dou omou"],["don't tell anyone","dare ni mo iwanaide"]
+    ]}
+  ]},
+  { id:'family', name:'משפחה ואנשים', icon:'👪', subs:[
+    { id:'members', name:'בני משפחה', words:[
+      ["family","kazoku"],["father","otousan"],["mother","okaasan"],["older brother","oniisan"],["older sister","oneesan"],
+      ["younger brother","otouto"],["younger sister","imouto"],["grandfather","ojiisan"],["grandmother","obaasan"],
+      ["husband","shujin"],["wife","tsuma"],["child","kodomo"],["baby","akachan"],["friend","tomodachi"],["name","namae"]
+    ]},
+    { id:'people', name:'אנשים', words:[
+      ["person","hito"],["man","otoko no hito"],["woman","onna no hito"],["teacher","sensei"],["student","gakusei"],
+      ["doctor","isha"],["I","watashi"],["you","anata"],["he","kare"],["she","kanojo"],["we","watashitachi"],["they","karera"]
+    ]}
+  ]},
+  { id:'time_dates', name:'זמן ולוח שנה', icon:'📅', subs:[
+    { id:'days', name:'ימים בשבוע', words:[
+      ["Monday","getsuyoubi"],["Tuesday","kayoubi"],["Wednesday","suiyoubi"],["Thursday","mokuyoubi"],
+      ["Friday","kinyoubi"],["Saturday","doyoubi"],["Sunday","nichiyoubi"],["week","shuu"]
+    ]},
+    { id:'day_parts', name:'חלקי היום', words:[
+      ["morning","asa"],["afternoon","hiru"],["night","yoru"],["today","kyou"],["tomorrow","ashita"],["yesterday","kinou"],["now","ima"]
+    ]},
+    { id:'seasons', name:'עונות השנה', words:[
+      ["spring","haru"],["summer","natsu"],["autumn","aki"],["winter","fuyu"],["year","toshi"],["month","tsuki"]
+    ]},
+    { id:'time_words', name:'מילות זמן', words:[
+      ["always","itsumo"],["sometimes","tokidoki"],["already","mou"],["not yet","mada"],["again","mata"],["soon","mou sugu"]
+    ]}
+  ]},
+  { id:'feelings', name:'רגשות ותארים', icon:'😊', subs:[
+    { id:'emotions', name:'רגשות', words:[
+      ["happy","ureshii"],["sad","kanashii"],["tired","tsukareta"],["busy","isogashii"],["sick","byouki"],
+      ["healthy / energetic","genki"],["fun / interesting","tanoshii"],["angry","okotteiru"],["surprised","odoroita"]
+    ]},
+    { id:'adjectives', name:'תארים', words:[
+      ["big","ookii"],["small","chiisai"],["new","atarashii"],["old","furui"],["good","ii"],["bad","warui"],
+      ["hot (weather)","atsui"],["cold (weather)","samui"],["difficult","muzukashii"],["easy","kantan"],
+      ["beautiful","kirei"],["fast","hayai"],["slow","osoi"],["expensive","takai"],["cheap","yasui"]
+    ]}
+  ]},
+  { id:'verbs', name:'פעלים יומיומיים', icon:'🏃', subs:[
+    { id:'basic_verbs', name:'פעולות בסיסיות', words:[
+      ["to eat","taberu"],["to drink","nomu"],["to go","iku"],["to come","kuru"],["to see / watch","miru"],
+      ["to hear / listen","kiku"],["to speak","hanasu"],["to read","yomu"],["to write","kaku"],["to sleep","neru"],["to wake up","okiru"]
+    ]},
+    { id:'more_verbs', name:'עוד פעלים', words:[
+      ["to buy","kau"],["to sell","uru"],["to do","suru"],["to make","tsukuru"],["to know","shiru"],["to understand","wakaru"],
+      ["to walk","aruku"],["to run","hashiru"],["to wait","matsu"],["to meet","au"],["to think","omou"],["to like","suki"],
+      ["to want","hoshii"],["to work","hataraku"],["to study","benkyou suru"],["to play","asobu"],["to give","ageru"],
+      ["to receive","morau"],["to help","tetsudau"],["to teach","oshieru"],["to learn","narau"],["to live / reside","sumu"],
+      ["to return / go home","kaeru"]
+    ]}
+  ]},
+  { id:'places_things', name:'בית, מקומות וחפצים', icon:'🏠', subs:[
+    { id:'home', name:'בבית', words:[
+      ["house","ie"],["room","heya"],["door","doa"],["window","mado"],["chair","isu"],["table / desk","tsukue"],
+      ["bed","beddo"],["key","kagi"],["bathroom / toilet","toire"]
+    ]},
+    { id:'places', name:'מקומות בעיר', words:[
+      ["school","gakkou"],["station","eki"],["hospital","byouin"],["restaurant","resutoran"],["store / shop","mise"],
+      ["park","kouen"],["city","machi"],["country","kuni"],["Japan","nihon"],["airport","kuukou"],["road / street","michi"]
+    ]},
+    { id:'objects', name:'חפצים יומיומיים', words:[
+      ["book","hon"],["pen","pen"],["paper","kami"],["bag","kaban"],["money","okane"],["car","kuruma"],["train","densha"],
+      ["bicycle","jitensha"],["phone","denwa"],["computer","pasokon"],["clothes","fuku"],["shoes","kutsu"],["hat","boushi"],
+      ["letter / mail","tegami"],["wallet","saifu"],["umbrella","kasa"],["glasses","megane"],["watch (clock)","tokei"]
+    ]}
+  ]},
+  { id:'nature', name:'טבע, מזג אוויר וצבעים', icon:'🌿', subs:[
+    { id:'weather', name:'מזג אוויר', words:[
+      ["weather","tenki"],["rain","ame"],["snow","yuki"],["wind","kaze"],["sun","taiyou"]
+    ]},
+    { id:'nature', name:'טבע', words:[
+      ["sky","sora"],["sea / ocean","umi"],["mountain","yama"],["river","kawa"],["tree","ki"],["flower","hana"],
+      ["fire","hi"],["stone","ishi"],["dog","inu"],["cat","neko"],["bird","tori"],["insect","mushi"],["animal","doubutsu"]
+    ]},
+    { id:'colors', name:'צבעים', words:[
+      ["red","akai"],["blue","aoi"],["yellow","kiiroi"],["white","shiroi"],["black","kuroi"],["green","midori"],["color","iro"]
+    ]}
+  ]},
+  { id:'body', name:'גוף האדם', icon:'🧍', subs:[
+    { id:'body_parts', name:'איברי הגוף', words:[
+      ["head","atama"],["face","kao"],["eye","me"],["ear","mimi"],["mouth","kuchi"],["hand","te"],["foot / leg","ashi"],
+      ["hair","kami"],["body","karada"],["heart","kokoro"]
+    ]}
+  ]},
+  { id:'questions_directions', name:'שאלות וכיוונים', icon:'🧭', subs:[
+    { id:'question_words', name:'מילות שאלה', words:[
+      ["what","nani"],["who","dare"],["when","itsu"],["where","doko"],["why","naze"],["how","dou"],["which","dore"],["how much / many","dono kurai"]
+    ]},
+    { id:'directions', name:'כיוונים ומיקום', words:[
+      ["left","hidari"],["right","migi"],["front","mae"],["back","ushiro"],["inside","naka"],["outside","soto"],
+      ["up","ue"],["down","shita"],["here","koko"],["there","soko"],["over there","asoko"],["this","kore"],["that","sore"],["that (over there)","are"]
+    ]}
+  ]}
+];
+
+/* ================= FLATTEN ================= */
+const WORDS = [];
+const CAT_INDEX = {}; // catId -> { subId -> [globalIndices] }
+CATEGORIES.forEach(cat => {
+  CAT_INDEX[cat.id] = {};
+  cat.subs.forEach(sub => {
+    const idxs = [];
+    sub.words.forEach(w => { WORDS.push(w); idxs.push(WORDS.length - 1); });
+    CAT_INDEX[cat.id][sub.id] = idxs;
+  });
+});
+function catAllIndices(catId) {
+  return Object.values(CAT_INDEX[catId]).flat();
+}
+
+/* ================= STATE / STORAGE ================= */
+let progress = null; // { status: { idx: 'known'|'unknown' } }
+let nav = { view: 'home', catId: null, subId: null };
+
+async function loadProgress() {
+  try {
+    const snap = await getDoc(doc(db, 'vocabProgress', DEVICE_ID));
+    return snap.exists() ? snap.data() : null;
+  } catch (e) { console.error('load failed', e); return null; }
+}
+async function saveProgress(p) {
+  try { await setDoc(doc(db, 'vocabProgress', DEVICE_ID), p); }
+  catch (e) { console.error('save failed', e); }
+}
+function shuffle(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+function countStatus(indices, status) {
+  return indices.filter(i => progress.status[i] === status).length;
+}
+function globalUnknownIndices() {
+  return Object.keys(progress.status).filter(k => progress.status[k] === 'unknown').map(Number);
+}
+
+/* ================= CARD RENDERING (shared) ================= */
+function makeCard(idx) {
+  const [en, ro] = WORDS[idx];
+  const status = progress.status[idx];
+  const div = document.createElement('div');
+  div.className = 'card' + (status ? ' ' + status : '');
+  div.innerHTML = `
+    ${status ? `<div class="status-dot ${status}"></div>` : ''}
+    <div class="front-en"><span class="ltr">${en}</span></div>
+    <div class="back-ro"><span class="ltr">${ro}</span></div>
+    <div class="mark-row">
+      <button class="mark-btn know-btn ${status === 'known' ? 'active-know' : ''}" title="יודעת">✓</button>
+      <button class="mark-btn unknown-btn ${status === 'unknown' ? 'active-unknown' : ''}" title="לא יודעת">✗</button>
+    </div>
+  `;
+  div.addEventListener('click', (e) => {
+    if (e.target.closest('.mark-btn')) return;
+    div.classList.toggle('flipped');
+  });
+  div.querySelector('.know-btn').addEventListener('click', async () => {
+    progress.status[idx] = 'known';
+    await saveProgress(progress);
+    render();
+  });
+  div.querySelector('.unknown-btn').addEventListener('click', async () => {
+    progress.status[idx] = 'unknown';
+    await saveProgress(progress);
+    render();
+  });
+  return div;
+}
+
+/* ================= VIEWS ================= */
+const app = document.getElementById('app');
+
+function renderHome() {
+  const unknownCount = globalUnknownIndices().length;
+  let html = '';
+  if (unknownCount > 0) {
+    html += `<div class="stack-pill" id="stackPill"><span class="txt">🗂️ מילים שלא ידעתי</span><span class="count">${unknownCount}</span></div>`;
+  }
+  html += `<div class="cat-grid" id="catGrid"></div>`;
+  app.innerHTML = html;
+
+  if (unknownCount > 0) {
+    document.getElementById('stackPill').addEventListener('click', () => {
+      nav = { view: 'stack' };
+      render();
+    });
+  }
+  const grid = document.getElementById('catGrid');
+  CATEGORIES.forEach(cat => {
+    const all = catAllIndices(cat.id);
+    const known = countStatus(all, 'known');
+    const card = document.createElement('div');
+    card.className = 'cat-card';
+    card.innerHTML = `<div class="icon">${cat.icon}</div><div class="name">${cat.name}</div><div class="prog">${known}/${all.length} ידועות</div>`;
+    card.addEventListener('click', () => { nav = { view: 'category', catId: cat.id }; render(); });
+    grid.appendChild(card);
+  });
+}
+
+function renderCategory(catId) {
+  const cat = CATEGORIES.find(c => c.id === catId);
+  let html = `
+    <div class="topnav">
+      <button class="back-btn" id="backBtn">→ חזרה</button>
+      <div><h1>${cat.icon} ${cat.name}</h1></div>
+    </div>
+    <div class="sub-list" id="subList"></div>
+  `;
+  app.innerHTML = html;
+  document.getElementById('backBtn').addEventListener('click', () => { nav = { view: 'home' }; render(); });
+
+  const list = document.getElementById('subList');
+  cat.subs.forEach(sub => {
+    const idxs = CAT_INDEX[cat.id][sub.id];
+    const known = countStatus(idxs, 'known');
+    const row = document.createElement('div');
+    row.className = 'sub-row';
+    row.innerHTML = `<div><div class="name">${sub.name}</div><div class="prog">${known}/${idxs.length} ידועות</div></div><div class="chev">‹</div>`;
+    row.addEventListener('click', () => { nav = { view: 'subcategory', catId: cat.id, subId: sub.id }; render(); });
+    list.appendChild(row);
+  });
+}
+
+function renderSubcategory(catId, subId) {
+  const cat = CATEGORIES.find(c => c.id === catId);
+  const sub = cat.subs.find(s => s.id === subId);
+  const idxs = CAT_INDEX[catId][subId];
+
+  app.innerHTML = `
+    <div class="topnav">
+      <button class="back-btn" id="backBtn">→ חזרה</button>
+      <div><h1>${sub.name}</h1><div class="sub">${cat.name}</div></div>
+    </div>
+    <div class="grid" id="wordGrid"></div>
+    <button class="game-btn" id="gameBtn">🎮 מצב משחק — הקבוצה הזו</button>
+  `;
+  document.getElementById('backBtn').addEventListener('click', () => { nav = { view: 'category', catId }; render(); });
+
+  const grid = document.getElementById('wordGrid');
+  idxs.forEach(idx => grid.appendChild(makeCard(idx)));
+
+  document.getElementById('gameBtn').addEventListener('click', () => openGame(idxs));
+}
+
+function renderStack() {
+  const idxs = globalUnknownIndices();
+  app.innerHTML = `
+    <div class="topnav">
+      <button class="back-btn" id="backBtn">→ חזרה</button>
+      <div><h1>🗂️ מילים שלא ידעתי</h1><div class="sub">מכל הקטגוריות</div></div>
+    </div>
+    <div class="grid" id="wordGrid"></div>
+    <button class="game-btn" id="gameBtn" ${idxs.length === 0 ? 'disabled' : ''}>🎮 מצב משחק — תרגול הערימה</button>
+  `;
+  document.getElementById('backBtn').addEventListener('click', () => { nav = { view: 'home' }; render(); });
+
+  const grid = document.getElementById('wordGrid');
+  if (idxs.length === 0) {
+    grid.innerHTML = '<div class="empty-note" style="grid-column: 1 / -1;">הערימה ריקה כרגע 🎉</div>';
+  } else {
+    shuffle(idxs).forEach(idx => grid.appendChild(makeCard(idx)));
+  }
+  document.getElementById('gameBtn').addEventListener('click', () => openGame(idxs));
+}
+
+function render() {
+  document.getElementById('sealTotal').textContent = countKnownTotal();
+  if (nav.view === 'home') renderHome();
+  else if (nav.view === 'category') renderCategory(nav.catId);
+  else if (nav.view === 'subcategory') renderSubcategory(nav.catId, nav.subId);
+  else if (nav.view === 'stack') renderStack();
+}
+function countKnownTotal() {
+  return Object.values(progress.status).filter(s => s === 'known').length;
+}
+
+/* ================= GAME MODE ================= */
+let game = null;
+
+function openGame(indices) {
+  if (!indices.length) return;
+  game = { queue: shuffle(indices), attempts: {}, total: indices.length, results: { known: 0, toStack: 0 } };
+  document.getElementById('gameOverlay').classList.add('open');
+  renderGameCard();
+}
+function closeGame() {
+  document.getElementById('gameOverlay').classList.remove('open');
+  game = null;
+  render();
+}
+function renderGameCard() {
+  const area = document.getElementById('gameCardArea');
+  if (!game.queue.length) {
+    area.innerHTML = `
+      <button class="game-close" id="gameCloseBtn">✕</button>
+      <div class="game-summary">
+        <div class="big-num">🎉</div>
+        סיימת את הסבב!<br>
+        <b>${game.results.known}</b> סומנו כיודעת<br>
+        <b>${game.results.toStack}</b> עברו לערימת "לא ידעתי"
+      </div>
+      <button class="game-done-btn" id="gameDoneBtn">סגירה</button>
+    `;
+    document.getElementById('gameCloseBtn').addEventListener('click', closeGame);
+    document.getElementById('gameDoneBtn').addEventListener('click', closeGame);
+    return;
+  }
+  const idx = game.queue[0];
+  const [en, ro] = WORDS[idx];
+  area.innerHTML = `
+    <button class="game-close" id="gameCloseBtn">✕</button>
+    <div class="game-progress">נשארו ${game.queue.length} בסבב הזה</div>
+    <div class="game-word"><span class="ltr">${en}</span></div>
+    <div class="game-reading ltr" id="gameReading" style="display:none;">${ro}</div>
+    <button class="game-reveal-btn" id="revealBtn">הראי את התשובה</button>
+    <div class="game-answer-row" id="answerRow" style="display:none;">
+      <button class="know-big" id="knowBtn">✓ ידעתי</button>
+      <button class="unknown-big" id="unknownBtn">✗ לא ידעתי</button>
+    </div>
+  `;
+  document.getElementById('gameCloseBtn').addEventListener('click', closeGame);
+  document.getElementById('revealBtn').addEventListener('click', () => {
+    document.getElementById('gameReading').style.display = 'block';
+    document.getElementById('revealBtn').style.display = 'none';
+    document.getElementById('answerRow').style.display = 'flex';
+  });
+  document.getElementById('knowBtn').addEventListener('click', () => answerGame(true));
+  document.getElementById('unknownBtn').addEventListener('click', () => answerGame(false));
+}
+async function answerGame(knewIt) {
+  const idx = game.queue.shift();
+  if (knewIt) {
+    progress.status[idx] = 'known';
+    game.results.known++;
+    await saveProgress(progress);
+  } else {
+    game.attempts[idx] = (game.attempts[idx] || 0) + 1;
+    if (game.attempts[idx] >= 3) {
+      progress.status[idx] = 'unknown';
+      game.results.toStack++;
+      await saveProgress(progress);
+    } else {
+      const insertAt = Math.min(2, game.queue.length);
+      game.queue.splice(insertAt, 0, idx);
+    }
+  }
+  renderGameCard();
+}
+
+/* ================= INIT ================= */
+async function init() {
+  app.innerHTML = '<div class="empty-note">טוען...</div>';
+  let p = await loadProgress();
+  if (!p) { p = { status: {} }; await saveProgress(p); }
+  progress = p;
+  render();
+}
+init();
+</script>
+</body>
+</html>
