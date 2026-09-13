@@ -647,25 +647,38 @@ async function answerGame(knewIt) {
 }
 
 /* ================= AUTH SCREEN ================= */
+let authMode = 'signup'; // 'signup' | 'login'
+
 function renderAuthScreen() {
   document.getElementById('logoutBtn').style.display = 'none';
+  const isSignup = authMode === 'signup';
   app.innerHTML = `
     <div class="auth-wrap">
       <div class="auth-card">
         <h2>言葉 Kotoba</h2>
+        <h3 style="text-align:center; font-size:14px; color:var(--paper-dim); margin:-10px 0 18px;">
+          ${isSignup ? 'יצירת חשבון חדש' : 'התחברות לחשבון קיים'}
+        </h3>
         <div class="auth-field">
           <label>שם משתמש</label>
           <input type="text" id="authUsername" autocomplete="username">
         </div>
         <div class="auth-field">
           <label>סיסמה</label>
-          <input type="password" id="authPassword" autocomplete="current-password">
+          <input type="password" id="authPassword" autocomplete="${isSignup ? 'new-password' : 'current-password'}">
         </div>
         <div class="auth-btn-row">
-          <button class="auth-signup" id="signupBtn">הרשמה</button>
-          <button class="auth-login" id="loginBtn">התחברות</button>
+          <button class="${isSignup ? 'auth-signup' : 'auth-login'}" id="authSubmitBtn" style="flex:1;">
+            ${isSignup ? 'הרשמה' : 'התחברות'}
+          </button>
         </div>
         <div class="auth-error" id="authError"></div>
+        <div style="text-align:center; margin-top:16px; font-size:13px;">
+          ${isSignup ? 'כבר יש לך חשבון?' : 'אין לך חשבון עדיין?'}
+          <a href="#" id="authSwitchLink" style="color:var(--teal); text-decoration:underline;">
+            ${isSignup ? 'התחברות' : 'הרשמה'}
+          </a>
+        </div>
       </div>
     </div>
   `;
@@ -673,19 +686,22 @@ function renderAuthScreen() {
   const passEl = document.getElementById('authPassword');
   const errEl = document.getElementById('authError');
 
-  document.getElementById('signupBtn').addEventListener('click', async () => {
+  document.getElementById('authSubmitBtn').addEventListener('click', async () => {
     errEl.textContent = '';
     if (!userEl.value.trim() || !passEl.value) { errEl.textContent = 'צריך למלא שם משתמש וסיסמה.'; return; }
     try {
-      await createUserWithEmailAndPassword(auth, usernameToEmail(userEl.value), passEl.value);
+      if (isSignup) {
+        await createUserWithEmailAndPassword(auth, usernameToEmail(userEl.value), passEl.value);
+      } else {
+        await signInWithEmailAndPassword(auth, usernameToEmail(userEl.value), passEl.value);
+      }
     } catch (e) { errEl.textContent = authErrorMessage(e); }
   });
-  document.getElementById('loginBtn').addEventListener('click', async () => {
-    errEl.textContent = '';
-    if (!userEl.value.trim() || !passEl.value) { errEl.textContent = 'צריך למלא שם משתמש וסיסמה.'; return; }
-    try {
-      await signInWithEmailAndPassword(auth, usernameToEmail(userEl.value), passEl.value);
-    } catch (e) { errEl.textContent = authErrorMessage(e); }
+
+  document.getElementById('authSwitchLink').addEventListener('click', (e) => {
+    e.preventDefault();
+    authMode = isSignup ? 'login' : 'signup';
+    renderAuthScreen();
   });
 }
 
