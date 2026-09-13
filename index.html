@@ -132,13 +132,40 @@
   .game-done-btn { margin-top: 18px; width: 100%; padding: 12px; border-radius: 10px; border: none; background: var(--seal); color: #F6E9E7; font-weight: 700; font-family: 'Noto Sans Hebrew', sans-serif; cursor: pointer; }
 
   .footer-note { margin-top: 26px; text-align: center; font-size: 11px; color: var(--paper-dim); line-height: 1.7; }
+
+  /* auth screen */
+  .auth-wrap { max-width: 340px; margin: 60px auto 0; }
+  .auth-card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 26px 22px; }
+  .auth-card h2 { font-family: 'Shippori Mincho', serif; font-size: 20px; margin: 0 0 18px; text-align: center; }
+  .auth-field { margin-bottom: 12px; }
+  .auth-field label { display: block; font-size: 12px; color: var(--paper-dim); margin-bottom: 5px; }
+  .auth-field input {
+    width: 100%; padding: 11px 12px; border-radius: 8px; border: 1px solid var(--line);
+    background: var(--surface-raised); color: var(--paper); font-family: 'Noto Sans Hebrew', sans-serif; font-size: 14px;
+  }
+  .auth-field input:focus { outline: none; border-color: var(--teal); }
+  .auth-btn-row { display: flex; gap: 8px; margin-top: 16px; }
+  .auth-btn-row button {
+    flex: 1; padding: 11px; border-radius: 8px; border: none; font-weight: 700; cursor: pointer;
+    font-family: 'Noto Sans Hebrew', sans-serif; font-size: 14px;
+  }
+  .auth-signup { background: var(--teal); color: #10231C; }
+  .auth-login { background: var(--surface-raised); color: var(--paper); border: 1px solid var(--line) !important; }
+  .auth-error { color: var(--seal); font-size: 13px; margin-top: 10px; text-align: center; min-height: 16px; }
+  .logout-btn {
+    background: none; border: 1px solid var(--line); color: var(--paper-dim); border-radius: 8px;
+    padding: 6px 10px; font-size: 12px; cursor: pointer; font-family: 'Noto Sans Hebrew', sans-serif;
+  }
 </style>
 </head>
 <body>
 <div class="wrap">
   <header>
     <div class="brand">言葉<span>Kotoba — אוצר מילים</span></div>
-    <div class="seal" id="sealTotal">0</div>
+    <div style="display:flex; align-items:center; gap:8px;">
+      <button class="logout-btn" id="logoutBtn" style="display:none;">התנתקות</button>
+      <div class="seal" id="sealTotal">0</div>
+    </div>
   </header>
 
   <div id="app"></div>
@@ -151,6 +178,10 @@
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import {
+  getAuth, onAuthStateChanged, signOut,
+  createUserWithEmailAndPassword, signInWithEmailAndPassword
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDU__sgy3HqBuP_dmzdU5qG4qdBJCApaz8",
@@ -162,17 +193,22 @@ const firebaseConfig = {
 };
 const fbApp = initializeApp(firebaseConfig);
 const db = getFirestore(fbApp);
+const auth = getAuth(fbApp);
 
-/* Each browser gets its own persistent id, so each person's progress is separate */
-function getDeviceId() {
-  let id = localStorage.getItem('kotoba-device-id');
-  if (!id) {
-    id = 'dev-' + Math.random().toString(36).slice(2) + Date.now().toString(36);
-    localStorage.setItem('kotoba-device-id', id);
-  }
-  return id;
+/* Firebase Auth needs an email format, so a username becomes username@kotoba-vocab.app internally */
+function usernameToEmail(username) {
+  const clean = username.trim().toLowerCase().replace(/[^a-z0-9_.-]/g, '');
+  return clean + '@kotoba-vocab.app';
 }
-const DEVICE_ID = getDeviceId();
+function authErrorMessage(err) {
+  const code = err && err.code;
+  if (code === 'auth/email-already-in-use') return 'שם המשתמש הזה כבר תפוס — נסי שם אחר או התחברי.';
+  if (code === 'auth/weak-password') return 'הסיסמה חייבת להכיל לפחות 6 תווים.';
+  if (code === 'auth/invalid-email') return 'שם המשתמש מכיל תווים לא תקינים.';
+  if (code === 'auth/user-not-found' || code === 'auth/wrong-password' || code === 'auth/invalid-credential') return 'שם משתמש או סיסמה שגויים.';
+  if (code === 'auth/missing-password') return 'צריך למלא סיסמה.';
+  return 'משהו השתבש (' + code + '). נסי שוב.';
+}
 
 /* ================= CATEGORY DATA ================= */
 const CATEGORIES = [
@@ -375,12 +411,12 @@ let nav = { view: 'home', catId: null, subId: null };
 
 async function loadProgress() {
   try {
-    const snap = await getDoc(doc(db, 'vocabProgress', DEVICE_ID));
+    const snap = await getDoc(doc(db, 'vocabProgress', auth.currentUser.uid));
     return snap.exists() ? snap.data() : null;
   } catch (e) { console.error('load failed', e); return null; }
 }
 async function saveProgress(p) {
-  try { await setDoc(doc(db, 'vocabProgress', DEVICE_ID), p); }
+  try { await setDoc(doc(db, 'vocabProgress', auth.currentUser.uid), p); }
   catch (e) { console.error('save failed', e); }
 }
 function shuffle(arr) {
@@ -610,15 +646,67 @@ async function answerGame(knewIt) {
   renderGameCard();
 }
 
+/* ================= AUTH SCREEN ================= */
+function renderAuthScreen() {
+  document.getElementById('logoutBtn').style.display = 'none';
+  app.innerHTML = `
+    <div class="auth-wrap">
+      <div class="auth-card">
+        <h2>言葉 Kotoba</h2>
+        <div class="auth-field">
+          <label>שם משתמש</label>
+          <input type="text" id="authUsername" autocomplete="username">
+        </div>
+        <div class="auth-field">
+          <label>סיסמה</label>
+          <input type="password" id="authPassword" autocomplete="current-password">
+        </div>
+        <div class="auth-btn-row">
+          <button class="auth-signup" id="signupBtn">הרשמה</button>
+          <button class="auth-login" id="loginBtn">התחברות</button>
+        </div>
+        <div class="auth-error" id="authError"></div>
+      </div>
+    </div>
+  `;
+  const userEl = document.getElementById('authUsername');
+  const passEl = document.getElementById('authPassword');
+  const errEl = document.getElementById('authError');
+
+  document.getElementById('signupBtn').addEventListener('click', async () => {
+    errEl.textContent = '';
+    if (!userEl.value.trim() || !passEl.value) { errEl.textContent = 'צריך למלא שם משתמש וסיסמה.'; return; }
+    try {
+      await createUserWithEmailAndPassword(auth, usernameToEmail(userEl.value), passEl.value);
+    } catch (e) { errEl.textContent = authErrorMessage(e); }
+  });
+  document.getElementById('loginBtn').addEventListener('click', async () => {
+    errEl.textContent = '';
+    if (!userEl.value.trim() || !passEl.value) { errEl.textContent = 'צריך למלא שם משתמש וסיסמה.'; return; }
+    try {
+      await signInWithEmailAndPassword(auth, usernameToEmail(userEl.value), passEl.value);
+    } catch (e) { errEl.textContent = authErrorMessage(e); }
+  });
+}
+
 /* ================= INIT ================= */
-async function init() {
+onAuthStateChanged(auth, async (user) => {
+  if (!user) {
+    progress = null;
+    renderAuthScreen();
+    return;
+  }
+  document.getElementById('logoutBtn').style.display = 'inline-block';
   app.innerHTML = '<div class="empty-note">טוען...</div>';
   let p = await loadProgress();
   if (!p) { p = { status: {} }; await saveProgress(p); }
   progress = p;
+  nav = { view: 'home' };
   render();
-}
-init();
+});
+
+document.getElementById('logoutBtn').addEventListener('click', () => signOut(auth));
+
 </script>
 </body>
 </html>
